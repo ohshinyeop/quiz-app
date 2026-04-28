@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz958YYPnAeCytkdCn8HNsh7qMFWJJFId6sRvaMgmtJZXOyl3rCxhzeXxdbrO6t0jRq/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymWg8TtMG_qQAfnA9AaPaVwawApDrYDGcBZExdom49-_oNzODRorj6H1NoZ40Itfg6/exec";
 
 /** 시트/API에서 온 유형 값 정리 (전각·공백·대소문자) */
 function normalizeQuestionTypeFromApi(v) {
@@ -59,6 +59,7 @@ export default function App() {
   const [userAnswer, setUserAnswer] = useState("");
   const [result, setResult] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submissionCorrect, setSubmissionCorrect] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isRefreshingForStart, setIsRefreshingForStart] = useState(false);
 
@@ -142,6 +143,7 @@ export default function App() {
       setUserAnswer("");
       setResult("");
       setIsSubmitted(false);
+      setSubmissionCorrect(null);
       setIsStarted(true);
     } catch (err) {
       setQuestionsError(err.message || "문제를 불러오지 못했습니다.");
@@ -203,12 +205,12 @@ export default function App() {
         submittedAt: formatKstSubmittedAt(),
       });
       setResult(isCorrect ? "정답입니다 🎉" : "오답입니다");
-      setIsSubmitted(true);
     } catch (error) {
       console.error("구글 시트 저장 실패", error);
       setResult("저장에 실패했습니다. 다시 시도해 주세요.");
-      setIsSubmitted(true);
     } finally {
+      setSubmissionCorrect(isCorrect);
+      setIsSubmitted(true);
       setIsSaving(false);
     }
   };
@@ -232,6 +234,7 @@ export default function App() {
     setUserAnswer("");
     setResult("");
     setIsSubmitted(false);
+    setSubmissionCorrect(null);
   };
 
   if (!isStarted) {
@@ -241,20 +244,12 @@ export default function App() {
         <div style={styles.card}>
           <div style={styles.outer}>
             <div>아이샵케어 CX팀</div>
-            </div>
-          <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0px",
-          }}>
-          <div style={styles.title}>온보딩 퀴즈</div>
-          <div style={{
-            fontSize: "16px",
-          }}>💡 배운 내용, 퀴즈로 체크해봐요!</div>
           </div>
-          <div style={{
-            height: "1px",
-          }}></div>
+          <div style={styles.introTitleStack}>
+            <div style={styles.title}>온보딩 퀴즈</div>
+            <div style={styles.introTagline}>💡 배운 내용, 퀴즈로 체크해봐요!</div>
+          </div>
+          <div style={styles.introSpacer} />
           <div style={styles.description}>이름을 입력해 주세요.</div>
           {questionsError && (
             <p style={styles.error} role="alert">
@@ -303,6 +298,51 @@ export default function App() {
     );
   }
 
+  const showAnswerReveal = isSubmitted && submissionCorrect === false;
+
+  const oxButtonStyle = (letter) => {
+    const base = letter === "O" ? styles.oxBtnO : styles.oxBtnX;
+    if (!isSubmitted) return base;
+    if (submissionCorrect) {
+      const correctO = normalizeOx(currentQuiz.answer) === "o";
+      if (letter === "O" && correctO) return { ...base, ...styles.oxRevealCorrect };
+      if (letter === "X" && !correctO) return { ...base, ...styles.oxRevealCorrect };
+      return { ...base, ...styles.oxBtnMuted };
+    }
+    if (!showAnswerReveal) return { ...base, ...styles.oxBtnMuted };
+    const correctO = normalizeOx(currentQuiz.answer) === "o";
+    const userO = normalizeOx(userAnswer) === "o";
+    if (letter === "O") {
+      if (correctO) return { ...base, ...styles.oxRevealCorrect };
+      if (userO && !correctO) return { ...base, ...styles.oxRevealWrong };
+      return { ...base, ...styles.oxBtnMuted };
+    }
+    if (!correctO) return { ...base, ...styles.oxRevealCorrect };
+    if (!userO && correctO) return { ...base, ...styles.oxRevealWrong };
+    return { ...base, ...styles.oxBtnMuted };
+  };
+
+  const mcOptionCombinedStyle = (opt) => {
+    const base = { ...styles.mcOption };
+    if (!isSubmitted) {
+      if (userAnswer === opt) return { ...base, ...styles.mcOptionSelected };
+      return base;
+    }
+    if (submissionCorrect) {
+      if (userAnswer === opt) return { ...base, ...styles.mcOptionRevealCorrect };
+      return { ...base, ...styles.mcOptionDim };
+    }
+    if (showAnswerReveal) {
+      const nU = normalize(userAnswer);
+      const nO = normalize(opt);
+      const nA = normalize(currentQuiz.answer);
+      if (nO === nA) return { ...base, ...styles.mcOptionRevealCorrect };
+      if (nO === nU) return { ...base, ...styles.mcOptionRevealWrong };
+      return { ...base, ...styles.mcOptionDim };
+    }
+    return base;
+  };
+
   return (
     <div style={styles.page}>
       <LoadingOverlay open={showLoadingOverlay} message={loadingOverlayMessage} />
@@ -317,10 +357,7 @@ export default function App() {
           <div style={styles.oxWrap} role="group" aria-label="O 또는 X 선택">
             <button
               type="button"
-              style={{
-                ...styles.oxBtnO,
-                ...(isSubmitted && styles.oxBtnMuted),
-              }}
+              style={oxButtonStyle("O")}
               onClick={() => handleOxPick("O")}
               disabled={isSubmitted}
               aria-label="O"
@@ -329,10 +366,7 @@ export default function App() {
             </button>
             <button
               type="button"
-              style={{
-                ...styles.oxBtnX,
-                ...(isSubmitted && styles.oxBtnMuted),
-              }}
+              style={oxButtonStyle("X")}
               onClick={() => handleOxPick("X")}
               disabled={isSubmitted}
               aria-label="X"
@@ -343,44 +377,34 @@ export default function App() {
         ) : isMcQuestion(currentQuiz) ? (
           <div style={styles.mcBlock}>
             <div style={styles.mcList} role="group" aria-label="보기 선택">
-              {currentQuiz.options.map((opt, i) => {
-                const selected = userAnswer === opt;
-                return (
-                  <button
-                    key={`${i}-${opt.slice(0, 24)}`}
-                    type="button"
-                    style={{
-                      ...styles.mcOption,
-                      ...(selected && !isSubmitted ? styles.mcOptionSelected : {}),
-                      ...(isSubmitted && selected ? styles.mcOptionSubmitted : {}),
-                    }}
-                    onClick={() => {
-                      if (!isSubmitted) setUserAnswer(opt);
-                    }}
-                    disabled={isSubmitted}
-                  >
-                    <span style={styles.mcBadge}>{i + 1}</span>
-                    <span style={styles.mcText}>{opt}</span>
-                  </button>
-                );
-              })}
+              {currentQuiz.options.map((opt, i) => (
+                <button
+                  key={`${i}-${opt.slice(0, 24)}`}
+                  type="button"
+                  style={mcOptionCombinedStyle(opt)}
+                  onClick={() => {
+                    if (!isSubmitted) setUserAnswer(opt);
+                  }}
+                  disabled={isSubmitted}
+                >
+                  <span style={styles.mcBadge}>{i + 1}</span>
+                  <span style={styles.mcText}>{opt}</span>
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              style={{
-                ...styles.button,
-                ...(isSubmitted ? styles.buttonInactive : {}),
-              }}
-              onClick={handleSubmit}
-              disabled={isSubmitted}
-            >
-              제출
-            </button>
+            {!isSubmitted && (
+              <button type="button" style={styles.button} onClick={handleSubmit}>
+                제출
+              </button>
+            )}
           </div>
         ) : (
           <>
             <input
-              style={styles.input}
+              style={shortAnswerInputStyle(
+                showAnswerReveal,
+                isSubmitted && submissionCorrect === true,
+              )}
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               onKeyDown={(e) => {
@@ -389,22 +413,29 @@ export default function App() {
               placeholder="정답을 입력해 주세요"
               disabled={isSubmitted}
             />
+            {showAnswerReveal && !isMcQuestion(currentQuiz) && !isOxQuestion(currentQuiz) && (
+              <div style={styles.correctAnswerCallout} role="status">
+                <span style={styles.correctAnswerLabel}>정답</span>
+                <p style={styles.correctAnswerText}>{currentQuiz.answer}</p>
+              </div>
+            )}
 
-            <button
-              type="button"
-              style={{
-                ...styles.button,
-                ...(isSubmitted ? styles.buttonInactive : {}),
-              }}
-              onClick={handleSubmit}
-              disabled={isSubmitted}
-            >
-              제출
-            </button>
+            {!isSubmitted && (
+              <button type="button" style={styles.button} onClick={handleSubmit}>
+                제출
+              </button>
+            )}
           </>
         )}
 
         {result && <div style={styles.result}>{result}</div>}
+
+        {showAnswerReveal && currentQuiz.explanation && (
+          <div style={styles.explanationBox}>
+            <div style={styles.explanationTitle}>해설</div>
+            <p style={styles.explanationBody}>{currentQuiz.explanation}</p>
+          </div>
+        )}
 
         {isSubmitted && !isLastQuiz && (
           <button type="button" style={styles.subButton} onClick={handleNext}>
@@ -431,17 +462,7 @@ function LoadingOverlay({ open, message }) {
       aria-label={message}
     >
       <div style={styles.loadingCard}>
-        <div
-          className="quiz-app-spinner"
-          style={{
-            width: 44,
-            height: 44,
-            border: "3px solid #e5e8eb",
-            borderTopColor: "#3182f6",
-            borderRadius: "50%",
-            flexShrink: 0,
-          }}
-        />
+        <div className="quiz-app-spinner" style={styles.loadingSpinner} />
         <p style={styles.loadingMessage}>{message}</p>
       </div>
     </div>
@@ -461,7 +482,18 @@ const styles = {
     color: "#ffffff",
     fontWeight: "700",
     display: "flex",
-    flexDirection:"column",
+    flexDirection: "column",
+  },
+  introTitleStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0px",
+  },
+  introTagline: {
+    fontSize: "16px",
+  },
+  introSpacer: {
+    height: "1px",
   },
   page: {
     minHeight: "100vh",
@@ -559,8 +591,18 @@ const styles = {
     borderColor: "#3182f6",
     background: "#e8f3ff",
   },
-  mcOptionSubmitted: {
-    opacity: 0.92,
+  mcOptionDim: {
+    opacity: 0.52,
+  },
+  mcOptionRevealCorrect: {
+    border: "2px solid #3182f6",
+    background: "#e8f3ff",
+    opacity: 1,
+  },
+  mcOptionRevealWrong: {
+    border: "2px solid #f04452",
+    background: "#fff5f5",
+    opacity: 1,
   },
   mcBadge: {
     flexShrink: 0,
@@ -596,6 +638,60 @@ const styles = {
     color: "#191f28",
     fontFamily: font,
     outline: "none",
+  },
+  inputRevealWrong: {
+    border: "2px solid #f04452",
+    background: "#fff8f8",
+  },
+  inputRevealCorrect: {
+    border: "2px solid #3182f6",
+    background: "#e8f3ff",
+  },
+  correctAnswerCallout: {
+    marginBottom: "14px",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    border: "2px solid #3182f6",
+    background: "#e8f3ff",
+    boxSizing: "border-box",
+  },
+  correctAnswerLabel: {
+    display: "block",
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#2272eb",
+    marginBottom: "6px",
+  },
+  correctAnswerText: {
+    margin: 0,
+    fontSize: "16px",
+    fontWeight: "600",
+    lineHeight: 1.5,
+    color: "#191f28",
+    wordBreak: "keep-all",
+  },
+  explanationBox: {
+    marginTop: "16px",
+    marginBottom: "4px",
+    padding: "16px",
+    borderRadius: "12px",
+    border: "1px solid #e5e8eb",
+    background: "#fafafa",
+    boxSizing: "border-box",
+  },
+  explanationTitle: {
+    fontSize: "15px",
+    fontWeight: "700",
+    color: "#191f28",
+    marginBottom: "10px",
+  },
+  explanationBody: {
+    margin: 0,
+    fontSize: "15px",
+    lineHeight: 1.55,
+    color: "#4e5968",
+    whiteSpace: "pre-wrap",
+    wordBreak: "keep-all",
   },
   oxWrap: {
     display: "flex",
@@ -652,6 +748,16 @@ const styles = {
     opacity: 0.45,
     cursor: "not-allowed",
   },
+  oxRevealCorrect: {
+    opacity: 1,
+    outline: "3px solid #3182f6",
+    outlineOffset: "3px",
+  },
+  oxRevealWrong: {
+    opacity: 1,
+    outline: "3px solid #f04452",
+    outlineOffset: "3px",
+  },
   loadingRoot: {
     position: "fixed",
     inset: 0,
@@ -676,6 +782,14 @@ const styles = {
     border: "1px solid #e5e8eb",
     boxShadow: "0 12px 40px rgba(0, 0, 0, 0.12)",
   },
+  loadingSpinner: {
+    width: 44,
+    height: 44,
+    border: "3px solid #e5e8eb",
+    borderTopColor: "#3182f6",
+    borderRadius: "50%",
+    flexShrink: 0,
+  },
   loadingMessage: {
     margin: 0,
     fontSize: "17px",
@@ -690,7 +804,7 @@ const styles = {
     fontSize: "17px",
     fontWeight: "600",
     border: "none",
-    borderRadius: "12px ",
+    borderRadius: "12px",
     background: "#3182f6",
     color: "#ffffff",
     cursor: "pointer",
@@ -737,3 +851,9 @@ const styles = {
     lineHeight: "1.5",
   },
 };
+
+function shortAnswerInputStyle(revealWrong, revealCorrect) {
+  if (revealWrong) return { ...styles.input, ...styles.inputRevealWrong };
+  if (revealCorrect) return { ...styles.input, ...styles.inputRevealCorrect };
+  return styles.input;
+}

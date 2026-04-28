@@ -16,6 +16,7 @@
  *    OX:      문제 | 정답(O/X) | 유형(ox)
  *    객관식:  문제 | 정답(보기 중 정답 문장과 동일) | 유형(객관식 또는 mc) | 보기1 | 보기2 | …
  *    보기 열 이름: 보기1~보기15, 선택1, option1 등 (영문 대소문자 허용)
+ *    해설(선택): 열 이름 "해설" 또는 "explanation" — 오답 시 앱에 표시됩니다.
  */
 
 var SHEET_SUBMISSIONS = "응답";
@@ -104,6 +105,12 @@ function readQuestionsFromSheet(sheet) {
   }
   var typeCol = findTypeColumnIndex(header, qCol, aCol);
   var optionColIndices = findOptionColumnIndices(header);
+  var explanationCol = findColumnIndex(header, [
+    "해설",
+    "explanation",
+    "Explanation",
+    "해설요약",
+  ]);
   var out = [];
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
@@ -177,7 +184,6 @@ function readQuestionsFromSheet(sheet) {
       }
       mcOptions = options;
     }
-    if (q === "" && a === "") continue;
     var item = {
       id: r + 1,
       question: q,
@@ -185,6 +191,10 @@ function readQuestionsFromSheet(sheet) {
       type: isOx ? "ox" : isMc ? "mc" : "short",
     };
     if (mcOptions) item.options = mcOptions;
+    if (explanationCol >= 0 && explanationCol < row.length) {
+      var ex = String(row[explanationCol] || "").trim();
+      if (ex !== "") item.explanation = ex;
+    }
     out.push(item);
   }
   return out;
