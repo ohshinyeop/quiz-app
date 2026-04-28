@@ -109,6 +109,8 @@ function readQuestionsFromSheet(sheet) {
     var row = values[r];
     var q = String(row[qCol] || "").trim();
     var a = String(row[aCol] || "").trim();
+    if (q === "" && a === "") continue;
+
     var rawType =
       typeCol >= 0 && typeCol < row.length
         ? normalizeQuestionTypeCell(row[typeCol])
@@ -143,7 +145,18 @@ function readQuestionsFromSheet(sheet) {
         if (optText !== "") options.push(optText);
       }
       if (options.length < 2) {
-        throw new Error("객관식 행 " + (r + 1) + ": 채워진 보기가 2개 미만입니다.");
+        throw new Error(
+          "객관식 행 " +
+            (r + 1) +
+            "(스프레드시트 " +
+            (r + 1) +
+            "행): 채워진 보기가 2개 미만입니다. " +
+            "① 1행에 보기1·보기2… 헤더가 있는지, " +
+            "② 해당 행에 선택지 텍스트가 들어갔는지 확인해 주세요. " +
+            "(빈 행에는 유형을 비우세요 · 현재 인식된 보기 " +
+            options.length +
+            "개)"
+        );
       }
       var ansNorm = normalizeForMcCompare(a);
       var matched = false;
@@ -269,13 +282,27 @@ function normalizeOxAnswer(value) {
   return s;
 }
 
+function normalizeHeaderForMatch(v) {
+  var s = String(v || "").trim().toLowerCase();
+  var out = "";
+  for (var i = 0; i < s.length; i++) {
+    var code = s.charCodeAt(i);
+    if (code >= 0xff10 && code <= 0xff19) {
+      out += String.fromCharCode(code - 0xff10 + 48);
+    } else if (code >= 0xff01 && code <= 0xff5e) {
+      out += String.fromCharCode(code - 0xfee0);
+    } else {
+      out += s.charAt(i);
+    }
+  }
+  return out.replace(/\s+/g, "");
+}
+
 function findColumnIndex(headerRow, candidates) {
   for (var c = 0; c < headerRow.length; c++) {
-    var cell = String(headerRow[c] || "")
-      .trim()
-      .toLowerCase();
+    var cell = normalizeHeaderForMatch(headerRow[c]);
     for (var i = 0; i < candidates.length; i++) {
-      if (cell === String(candidates[i]).toLowerCase()) {
+      if (cell === normalizeHeaderForMatch(candidates[i])) {
         return c;
       }
     }

@@ -237,18 +237,29 @@ export default function App() {
   if (!isStarted) {
     return (
       <div style={styles.page}>
-        <LoadingOverlay open={showLoadingOverlay} message={loadingOverlayMessage} />
+        {/* <LoadingOverlay open={showLoadingOverlay} message={loadingOverlayMessage} /> */}
         <div style={styles.card}>
-          <h2 style={styles.title}>CX팀 온보딩 퀴즈</h2>
-          <h2 style={styles.subtitle}>💡 Quiz 온보딩 내용 짚고 가기</h2>
-          <p style={styles.description}>이름을 입력해 주세요.</p>
+          <div style={styles.outer}>
+            <div>아이샵케어 CX팀</div>
+            </div>
+          <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0px",
+          }}>
+          <div style={styles.title}>온보딩 퀴즈</div>
+          <div style={{
+            fontSize: "16px",
+          }}>💡 배운 내용, 퀴즈로 체크해봐요!</div>
+          </div>
+          <div style={{
+            height: "1px",
+          }}></div>
+          <div style={styles.description}>이름을 입력해 주세요.</div>
           {questionsError && (
             <p style={styles.error} role="alert">
               {questionsError}
             </p>
-          )}
-          {!questionsLoading && quizList.length > 0 && (
-            <p style={styles.hint}>문제 {quizList.length}개 · 시트에서 바꾼 내용은 시작 시 다시 불러옵니다.</p>
           )}
           <input
             style={styles.input}
@@ -441,6 +452,17 @@ const font =
   '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
 
 const styles = {
+  outer: {
+    border: "1px solid #e5e8eb",
+    padding: "10px 16px",
+    borderRadius: "18px",
+    width: "fit-content",
+    background: "#4285F4",
+    color: "#ffffff",
+    fontWeight: "700",
+    display: "flex",
+    flexDirection:"column",
+  },
   page: {
     minHeight: "100vh",
     background: "#f2f4f6",
@@ -450,6 +472,7 @@ const styles = {
     padding: "24px 20px",
     boxSizing: "border-box",
     fontFamily: font,
+    flexDirection: "column",
   },
   card: {
     width: "100%",
@@ -459,10 +482,12 @@ const styles = {
     borderRadius: "20px",
     boxSizing: "border-box",
     border: "1px solid #e5e8eb",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
   },
   title: {
-    margin: "0 0 8px",
-    fontSize: "29px",
+    fontSize: "32px",
     fontWeight: "700",
     letterSpacing: "-0.02em",
     color: "#050505",
@@ -476,9 +501,8 @@ const styles = {
     color: "#3c568a",
     lineHeight: "1.3",
   },
-  description: { margin: "0 0 20px", color: "#6b7684", fontSize: "16px", lineHeight: "1.5" },
+  description: { color: "#6b7684", fontSize: "16px", lineHeight: "1.5" },
   hint: {
-    margin: "0 0 16px",
     color: "#8b95a1",
     fontSize: "14px",
     lineHeight: "1.45",
@@ -666,7 +690,7 @@ const styles = {
     fontSize: "17px",
     fontWeight: "600",
     border: "none",
-    borderRadius: "12px",
+    borderRadius: "12px ",
     background: "#3182f6",
     color: "#ffffff",
     cursor: "pointer",
