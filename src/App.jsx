@@ -1,26 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const quizList = [
-  {
-    id: 1,
-    question: "프론트 뒷면 USB-C 포트에는 어떤 케이블을 사용해야 하나요?",
-    answer: "전용 케이블",
-  },
-  {
-    id: 2,
-    question: "프론트 어댑터는 아무거나 사용해도 되나요?",
-    answer: "아니오",
-  },
-  {
-    id: 3,
-    question: "유선프린터 POS8385 연결 시 확인해야 하는 케이블은 무엇인가요?",
-    answer: "시리얼 케이블",
-  },
-];
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyl_EyxCVfHWcY72Uy4RzkV_58Odo_4Lkz3o4L84_Q5j2cDIoLzqNI8poH9PXovZ81Q/exec";
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRpWHSZjnfnZXynrlGq1JYqM-7oaxBhZcTqyRghCWqLLVN5IHXLC4mNhFAm1ayIoTH/exec";
+async function fetchQuestionsFromSheet() {
+  const url = `${GOOGLE_SCRIPT_URL}?action=questions`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`서버 응답 ${res.status}`);
+  }
+  const data = await res.json();
+  if (!data.ok) {
+    throw new Error(data.error || "문제를 불러오지 못했습니다.");
+  }
+  return Array.isArray(data.questions) ? data.questions : [];
+}
 
 export default function App() {
+  const [quizList, setQuizList] = useState([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionsError, setQuestionsError] = useState(null);
+
   const [userName, setUserName] = useState("");
   const [isStarted, setIsStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -28,20 +27,60 @@ export default function App() {
   const [result, setResult] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshingForStart, setIsRefreshingForStart] = useState(false);
+
+  const loadQuestions = async () => {
+    setQuestionsError(null);
+    setQuestionsLoading(true);
+    try {
+      const list = await fetchQuestionsFromSheet();
+      setQuizList(list);
+      if (list.length === 0) {
+        setQuestionsError("등록된 문제가 없습니다. 스프레드시트 「문제」 시트를 확인해 주세요.");
+      }
+    } catch (err) {
+      setQuizList([]);
+      setQuestionsError(err.message || "문제를 불러오지 못했습니다.");
+    } finally {
+      setQuestionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestions();
+  }, []);
 
   const currentQuiz = quizList[currentIndex];
-  const isLastQuiz = currentIndex === quizList.length - 1;
+  const isLastQuiz = quizList.length > 0 && currentIndex === quizList.length - 1;
 
   const normalize = (value) => {
     return value.trim().replace(/\s/g, "").toLowerCase();
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!userName.trim()) {
       alert("이름을 입력해 주세요.");
       return;
     }
-    setIsStarted(true);
+    setIsRefreshingForStart(true);
+    setQuestionsError(null);
+    try {
+      const list = await fetchQuestionsFromSheet();
+      setQuizList(list);
+      if (!list.length) {
+        setQuestionsError("등록된 문제가 없습니다. 「문제」 시트에 문제와 정답을 입력해 주세요.");
+        return;
+      }
+      setCurrentIndex(0);
+      setUserAnswer("");
+      setResult("");
+      setIsSubmitted(false);
+      setIsStarted(true);
+    } catch (err) {
+      setQuestionsError(err.message || "문제를 불러오지 못했습니다.");
+    } finally {
+      setIsRefreshingForStart(false);
+    }
   };
 
   const saveToGoogleSheet = async (data) => {
@@ -53,6 +92,7 @@ export default function App() {
   };
 
   const handleSubmit = async () => {
+    if (!currentQuiz) return;
     if (!userAnswer.trim()) {
       setResult("정답을 입력해 주세요.");
       return;
@@ -89,23 +129,70 @@ export default function App() {
     setIsSubmitted(false);
   };
 
+  const busy = questionsLoading || isRefreshingForStart;
+
   if (!isStarted) {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
           <h2 style={styles.title}>퀴즈 시작</h2>
           <p style={styles.description}>이름을 입력해 주세요.</p>
+          {questionsError && (
+            <p style={styles.error} role="alert">
+              {questionsError}
+            </p>
+          )}
+          {!questionsLoading && quizList.length > 0 && (
+            <p style={styles.hint}>문제 {quizList.length}개 · 시트에서 바꾼 내용은 시작 시 다시 불러옵니다.</p>
+          )}
           <input
             style={styles.input}
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleStart();
+              if (e.key === "Enter" && !busy) handleStart();
             }}
             placeholder="이름"
+            disabled={busy}
           />
-          <button style={styles.button} onClick={handleStart}>
-            시작하기
+          <button
+            style={{
+              ...styles.button,
+              ...(busy ? styles.buttonInactive : {}),
+            }}
+            onClick={handleStart}
+            disabled={busy}
+          >
+            {isRefreshingForStart
+              ? "최신 문제 불러오는 중..."
+              : questionsLoading
+                ? "문제 불러오는 중..."
+                : "시작하기"}
+          </button>
+          {!questionsLoading && questionsError && (
+            <button type="button" style={styles.subButton} onClick={loadQuestions}>
+              다시 불러오기
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuiz) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <p style={styles.error}>표시할 문제가 없습니다.</p>
+          <button
+            type="button"
+            style={styles.button}
+            onClick={() => {
+              setIsStarted(false);
+              loadQuestions();
+            }}
+          >
+            처음으로
           </button>
         </div>
       </div>
@@ -146,7 +233,7 @@ export default function App() {
         {result && <div style={styles.result}>{result}</div>}
 
         {isSubmitted && !isLastQuiz && (
-          <button style={styles.subButton} onClick={handleNext}>
+          <button type="button" style={styles.subButton} onClick={handleNext}>
             다음 문제
           </button>
         )}
@@ -191,6 +278,18 @@ const styles = {
     lineHeight: "1.3",
   },
   description: { margin: "0 0 20px", color: "#6b7684", fontSize: "16px", lineHeight: "1.5" },
+  hint: {
+    margin: "0 0 16px",
+    color: "#8b95a1",
+    fontSize: "14px",
+    lineHeight: "1.45",
+  },
+  error: {
+    margin: "0 0 16px",
+    color: "#f04452",
+    fontSize: "15px",
+    lineHeight: "1.5",
+  },
   progress: {
     margin: "0 0 16px",
     color: "#8b95a1",
