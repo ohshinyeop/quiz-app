@@ -135,7 +135,8 @@ export default function App() {
     return (
       <div style={styles.page}>
         <div style={styles.card}>
-          <h2 style={styles.title}>퀴즈 시작</h2>
+          <h2 style={styles.title}>아이샵케어 퀴즈</h2>
+          <h2 style={styles.title}>Made by 김슬기</h2>
           <p style={styles.description}>이름을 입력해 주세요.</p>
           {questionsError && (
             <p style={styles.error} role="alert">
