@@ -18,6 +18,23 @@ function normalizeQuestionTypeFromApi(v) {
   return out.toLowerCase().replace(/\s+/g, "");
 }
 
+/** 응답 시트용: KST, yy.MM.dd HH.mm.ss (재배포 없이 프론트에서만 포맷) */
+function formatKstSubmittedAt(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Seoul",
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const v = (t) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${v("year")}.${v("month")}.${v("day")} ${v("hour")}.${v("minute")}.${v("second")}`;
+}
+
 async function fetchQuestionsFromSheet() {
   const url = `${GOOGLE_SCRIPT_URL}?action=questions`;
   const res = await fetch(url);
@@ -160,7 +177,7 @@ export default function App() {
         userAnswer: userAnswerForSheet,
         correctAnswer: currentQuiz.answer,
         isCorrect: isCorrect ? "정답" : "오답",
-        submittedAt: new Date().toISOString(),
+        submittedAt: formatKstSubmittedAt(),
       });
       setResult(isCorrect ? "정답입니다 🎉" : "오답입니다");
       setIsSubmitted(true);
