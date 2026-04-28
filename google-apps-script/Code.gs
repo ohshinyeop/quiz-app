@@ -12,9 +12,10 @@
  *    이름 | 문제번호 | 문제 | 사용자답 | 정답 | 결과 | 제출시각
  *
  * 2) 시트 이름: 문제
- *    1행 헤더: 문제 | 정답 | 유형  (정답·유형 열은 question|answer|type 도 가능)
- *    유형 열에 ox 를 적으면 O/X 문제로 처리되며, 정답 열은 O 또는 X(대소문자 무관)만 사용하세요.
- *    유형이 비어 있거나 ox 가 아니면 기존처럼 주관식(텍스트 정답)입니다.
+ *    주관식: 문제 | 정답 | 유형(비움)
+ *    OX:      문제 | 정답(O/X) | 유형(ox)
+ *    객관식:  문제 | 정답(보기 중 정답 문장과 동일) | 유형(객관식 또는 mc) | 보기1 | 보기2 | …
+ *    보기 열 이름: 보기1~보기15, 선택1, option1 등 (영문 대소문자 허용)
  */
 
 var SHEET_SUBMISSIONS = "응답";
@@ -102,6 +103,7 @@ function readQuestionsFromSheet(sheet) {
     throw new Error('문제 시트 1행에 "문제"와 "정답" 열이 필요합니다.');
   }
   var typeCol = findTypeColumnIndex(header, qCol, aCol);
+  var optionColIndices = findOptionColumnIndices(header);
   var out = [];
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
@@ -112,6 +114,11 @@ function readQuestionsFromSheet(sheet) {
         ? normalizeQuestionTypeCell(row[typeCol])
         : "";
     var isOx = rawType === "ox";
+    var isMc = isMcQuestionType(rawType);
+    var mcOptions = null;
+    if (isOx && isMc) {
+      throw new Error("행 " + (r + 1) + ": 유형은 ox 와 객관식을 동시에 쓸 수 없습니다.");
+    }
     if (isOx) {
       var ax = normalizeOxAnswer(a);
       if (ax !== "o" && ax !== "x") {
@@ -124,17 +131,93 @@ function readQuestionsFromSheet(sheet) {
         );
       }
       a = ax.toUpperCase();
+    } else if (isMc) {
+      if (optionColIndices.length < 2) {
+        throw new Error(
+          '객관식은 시트에 "보기1", "보기2" … 열(최소 2개)이 필요합니다.'
+        );
+      }
+      var options = [];
+      for (var oi = 0; oi < optionColIndices.length; oi++) {
+        var optText = String(row[optionColIndices[oi]] || "").trim();
+        if (optText !== "") options.push(optText);
+      }
+      if (options.length < 2) {
+        throw new Error("객관식 행 " + (r + 1) + ": 채워진 보기가 2개 미만입니다.");
+      }
+      var ansNorm = normalizeForMcCompare(a);
+      var matched = false;
+      for (var j = 0; j < options.length; j++) {
+        if (normalizeForMcCompare(options[j]) === ansNorm) {
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        throw new Error(
+          '객관식 행 ' +
+            (r + 1) +
+            ': 정답 셀 내용이 보기 중 하나와 같아야 합니다. (정답: "' +
+            a +
+            '")'
+        );
+      }
+      mcOptions = options;
     }
     if (q === "" && a === "") continue;
     var item = {
       id: r + 1,
       question: q,
       answer: a,
-      type: isOx ? "ox" : "short",
+      type: isOx ? "ox" : isMc ? "mc" : "short",
     };
+    if (mcOptions) item.options = mcOptions;
     out.push(item);
   }
   return out;
+}
+
+function isMcQuestionType(rawType) {
+  return (
+    rawType === "mc" ||
+    rawType === "객관식" ||
+    rawType === "choice" ||
+    rawType === "multiple" ||
+    rawType === "multiplechoice"
+  );
+}
+
+function normalizeForMcCompare(s) {
+  return String(s || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+/** 보기1 … 보기15, 선택1, option1, A열 식(1~10만) */
+function findOptionColumnIndices(headerRow) {
+  var found = [];
+  for (var n = 1; n <= 15; n++) {
+    var idx = findColumnIndex(headerRow, [
+      "보기" + n,
+      "보기 " + n,
+      "선택" + n,
+      "선택 " + n,
+      "option" + n,
+      "Option" + n,
+    ]);
+    if (idx !== -1) {
+      found.push({ n: n, idx: idx });
+    }
+  }
+  found.sort(function (a, b) {
+    return a.n - b.n;
+  });
+  var outIdx = [];
+  for (var i = 0; i < found.length; i++) {
+    outIdx.push(found[i].idx);
+  }
+  return outIdx;
 }
 
 /** 헤더에 "유형" 포함 여부·3열 가정 등으로 열 인덱스 찾기 */

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2UviIj6mQUy_aPYIeqzXrR1kZ6j2LKpA5zkEgJrS8PKpMXGMKZKZ6BAiVRCQ3VoAM/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz958YYPnAeCytkdCn8HNsh7qMFWJJFId6sRvaMgmtJZXOyl3rCxhzeXxdbrO6t0jRq/exec";
 
 /** 시트/API에서 온 유형 값 정리 (전각·공백·대소문자) */
 function normalizeQuestionTypeFromApi(v) {
@@ -111,6 +111,18 @@ export default function App() {
     return normalizeQuestionTypeFromApi(quiz.type) === "ox";
   };
 
+  const isMcQuestion = (quiz) => {
+    if (!quiz || !Array.isArray(quiz.options) || quiz.options.length < 2) return false;
+    const t = normalizeQuestionTypeFromApi(quiz.type);
+    return (
+      t === "mc" ||
+      t === "객관식" ||
+      t === "choice" ||
+      t === "multiple" ||
+      t === "multiplechoice"
+    );
+  };
+
   const handleStart = async () => {
     if (questionsLoading || isRefreshingForStart) return;
     if (!userName.trim()) {
@@ -150,6 +162,8 @@ export default function App() {
     if (!currentQuiz || isSaving) return;
 
     const ox = isOxQuestion(currentQuiz);
+    const mc = isMcQuestion(currentQuiz);
+
     if (ox) {
       const o = normalizeOx(answer);
       if (o !== "o" && o !== "x") {
@@ -157,16 +171,25 @@ export default function App() {
         return;
       }
       setUserAnswer(o.toUpperCase());
+    } else if (mc) {
+      const picked = String(answer ?? "").trim();
+      if (!picked) {
+        setResult("보기를 선택해 주세요.");
+        return;
+      }
+      setUserAnswer(picked);
     } else {
-      if (!answer.trim()) {
+      if (!String(answer).trim()) {
         setResult("정답을 입력해 주세요.");
         return;
       }
-      setUserAnswer(answer.trim());
+      setUserAnswer(String(answer).trim());
     }
 
-    const isCorrect = answersMatch(ox ? answer : answer.trim(), currentQuiz.answer, ox ? "ox" : "short");
-    const userAnswerForSheet = ox ? normalizeOx(answer).toUpperCase() : answer.trim();
+    const rawU = ox ? answer : String(answer ?? "").trim();
+    const typeKey = ox ? "ox" : mc ? "mc" : "short";
+    const isCorrect = answersMatch(rawU, currentQuiz.answer, typeKey);
+    const userAnswerForSheet = ox ? normalizeOx(answer).toUpperCase() : String(answer ?? "").trim();
 
     setIsSaving(true);
     try {
@@ -216,8 +239,8 @@ export default function App() {
       <div style={styles.page}>
         <LoadingOverlay open={showLoadingOverlay} message={loadingOverlayMessage} />
         <div style={styles.card}>
-          <h2 style={styles.title}>아이샵케어 퀴즈</h2>
-          <h2 style={styles.subtitle}>Made by 김슬기</h2>
+          <h2 style={styles.title}>CX팀 온보딩 퀴즈</h2>
+          <h2 style={styles.subtitle}>💡 Quiz 온보딩 내용 짚고 가기</h2>
           <p style={styles.description}>이름을 입력해 주세요.</p>
           {questionsError && (
             <p style={styles.error} role="alert">
@@ -304,6 +327,43 @@ export default function App() {
               aria-label="X"
             >
               ×
+            </button>
+          </div>
+        ) : isMcQuestion(currentQuiz) ? (
+          <div style={styles.mcBlock}>
+            <div style={styles.mcList} role="group" aria-label="보기 선택">
+              {currentQuiz.options.map((opt, i) => {
+                const selected = userAnswer === opt;
+                return (
+                  <button
+                    key={`${i}-${opt.slice(0, 24)}`}
+                    type="button"
+                    style={{
+                      ...styles.mcOption,
+                      ...(selected && !isSubmitted ? styles.mcOptionSelected : {}),
+                      ...(isSubmitted && selected ? styles.mcOptionSubmitted : {}),
+                    }}
+                    onClick={() => {
+                      if (!isSubmitted) setUserAnswer(opt);
+                    }}
+                    disabled={isSubmitted}
+                  >
+                    <span style={styles.mcBadge}>{i + 1}</span>
+                    <span style={styles.mcText}>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              style={{
+                ...styles.button,
+                ...(isSubmitted ? styles.buttonInactive : {}),
+              }}
+              onClick={handleSubmit}
+              disabled={isSubmitted}
+            >
+              제출
             </button>
           </div>
         ) : (
@@ -393,7 +453,7 @@ const styles = {
   },
   card: {
     width: "100%",
-    maxWidth: "480px",
+    maxWidth: "560px",
     background: "#ffffff",
     padding: "28px 24px",
     borderRadius: "20px",
@@ -443,6 +503,62 @@ const styles = {
     lineHeight: "1.45",
     letterSpacing: "-0.02em",
     color: "#191f28",
+    wordBreak: "keep-all",
+  },
+  mcBlock: {
+    width: "100%",
+    marginBottom: "4px",
+  },
+  mcList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    marginBottom: "14px",
+    width: "100%",
+  },
+  mcOption: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "12px",
+    width: "100%",
+    padding: "14px 14px",
+    textAlign: "left",
+    border: "1px solid #e5e8eb",
+    borderRadius: "12px",
+    background: "#ffffff",
+    cursor: "pointer",
+    fontFamily: font,
+    boxSizing: "border-box",
+    transition: "border-color 0.15s, background 0.15s",
+  },
+  mcOptionSelected: {
+    borderColor: "#3182f6",
+    background: "#e8f3ff",
+  },
+  mcOptionSubmitted: {
+    opacity: 0.92,
+  },
+  mcBadge: {
+    flexShrink: 0,
+    width: "26px",
+    height: "26px",
+    borderRadius: "8px",
+    background: "#f2f4f6",
+    color: "#4e5968",
+    fontSize: "14px",
+    fontWeight: "700",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: "2px",
+  },
+  mcText: {
+    flex: 1,
+    fontSize: "16px",
+    fontWeight: "500",
+    lineHeight: 1.5,
+    color: "#191f28",
+    wordBreak: "keep-all",
   },
   input: {
     width: "100%",
