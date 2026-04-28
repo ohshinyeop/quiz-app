@@ -18,6 +18,14 @@
         margin: 0;
         -webkit-font-smoothing: antialiased;
       }
+      @keyframes quiz-app-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .quiz-app-spinner {
+        animation: quiz-app-spin 0.65s linear infinite;
+      }
     </style>
   </head>
   <body>
