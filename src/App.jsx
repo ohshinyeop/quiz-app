@@ -838,6 +838,7 @@ export default function App() {
           top: isMobileLayout
             ? "calc(52px + 6px + env(safe-area-inset-top, 0px))"
             : "calc(12px + env(safe-area-inset-top, 0px))",
+          ...(isMobileLayout && sidebarOpen ? { zIndex: 255 } : {}),
         }}
       />
       {isMobileLayout ? (
@@ -845,10 +846,10 @@ export default function App() {
           <button
             type="button"
             style={styles.mobileTopBarMenuBtn}
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setSidebarOpen((open) => !open)}
             aria-expanded={sidebarOpen}
             aria-controls="quiz-sidebar-panel"
-            aria-label="메뉴 열기"
+            aria-label={sidebarOpen ? "메뉴 닫기" : "메뉴 열기"}
           >
             <span style={styles.mobileTopBarMenuBtnInner}>
               <span style={styles.hamburgerBar} />
