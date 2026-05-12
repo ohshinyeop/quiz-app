@@ -1,0 +1,160 @@
+/* 인트로 팀 플랩 — 앱 outer 뱃지 톤, 크기는 글자·패딩에 맞춤 */
+.quiz-app-intro-book.quiz-app-book {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  min-width: min-content;
+  height: auto;
+  /* cqw + container-type은 fit-content와 순환되어 너비가 붕괴할 수 있음 → viewport 기반 */
+  --book-team-fs: clamp(10px, 2.85vw + 0.2rem, 13px);
+  --book-team-pad-x: clamp(6px, 0.95vw + 4px, 12px);
+  border-radius: 16px;
+  background-color: #ffffff;
+  border: 1px solid #e5e8eb;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.06);
+  perspective: 2000px;
+  isolation: isolate;
+  color: #191f28;
+  font-family: inherit;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.quiz-app-intro-book .quiz-app-book-stack {
+  position: relative;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+}
+
+.quiz-app-intro-book .quiz-app-book-stack > * {
+  grid-area: 1 / 1;
+}
+
+.quiz-app-intro-book .quiz-app-book-size-only {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-size: 13px;
+  font-size: var(--book-team-fs);
+}
+
+.quiz-app-intro-book .quiz-app-book-inner-text {
+  margin: 0;
+  padding: 8px 30px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  word-break: keep-all;
+  color: #191f28;
+}
+
+.quiz-app-intro-book .quiz-app-book-inner-text:not(.quiz-app-book-size-only) {
+  font-size: 13px;
+}
+
+.quiz-app-intro-book .quiz-app-book-cover {
+  top: 0;
+  left: 0;
+  position: absolute;
+  z-index: 1;
+  background-color: #4285f4;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  border: 1px solid #e5e8eb;
+  cursor: pointer;
+  transition: transform 0.5s ease;
+  transform-origin: 0 50%;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.quiz-app-intro-book .quiz-app-book-cover-text {
+  margin: 0;
+  padding: 8px 12px;
+  padding-inline: var(--book-team-pad-x);
+  font-size: 13px;
+  font-size: var(--book-team-fs);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  color: #ffffff;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+
+@media (hover: hover) {
+  .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover {
+    transform: rotateY(-80deg);
+  }
+
+  .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover-text {
+    /* opacity: 0; */
+  }
+}
+
+@media (hover: none) {
+  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover {
+    transform: rotateY(-72deg);
+  }
+
+  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover-text {
+    opacity: 0;
+  }
+}
+
+[data-theme="dark"] .quiz-app-intro-book.quiz-app-book {
+  background-color: #252b33;
+  border: 1px solid #3d4654;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.35);
+}
+
+[data-theme="dark"] .quiz-app-intro-book .quiz-app-book-inner-text {
+  color: #e4e8ed;
+}
+
+[data-theme="dark"] .quiz-app-intro-book .quiz-app-book-cover {
+  background-color: #4285f4;
+  border: 1px solid #3d4654;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.4);
+}
+
+[data-theme="dark"] .quiz-app-intro-book .quiz-app-book-cover-text {
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-app-intro-book .quiz-app-book-cover {
+    transition: none;
+  }
+  .quiz-app-intro-book .quiz-app-book-cover-text {
+    transition: none;
+  }
+  .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover {
+    transform: none;
+  }
+  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover {
+    transform: none;
+  }
+  .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover-text,
+  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover-text {
+    opacity: 1;
+  }
+}
