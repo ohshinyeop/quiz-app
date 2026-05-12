@@ -28,7 +28,7 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymWg8TtMG_qQ
  * 개발 모드: 목 문제·응답 시트 POST 생략(로컬 UI만 확인).
  * 배포/실연동 시 false 로 두면 Google Apps Script 로 조회·제출합니다.
  */
-const IS_DEV_MODE = true;
+const IS_DEV_MODE = false;
 
 /** 모바일: 상단바 + 드로어 / PC·태블릿: 좌측 고정 사이드바 */
 const MOBILE_SIDEBAR_MQ = "(max-width: 767px)";
