@@ -376,25 +376,26 @@ function QuizSidebar({
             >
               첫 화면
             </button>
-            {quizList.map((q, i) => {
-              const active = isStarted && quizPhase === "quiz" && currentIndex === i;
-              return (
-                <button
-                  type="button"
-                  key={q.id ?? i}
-                  style={{
-                    ...s.sidebarLink,
-                    ...(active ? s.sidebarLinkActive : {}),
-                    ...(!isStarted ? s.sidebarLinkMuted : {}),
-                  }}
-                  onClick={() => onOpenQuestion(i)}
-                  disabled={!isStarted || showLoadingOverlay}
-                >
-                  <span style={s.sidebarLinkNum}>문제 {i + 1}</span>
-                  <span style={s.sidebarLinkTitle}>{truncateNavTitle(q.question)}</span>
-                </button>
-              );
-            })}
+            {isStarted
+              ? quizList.map((q, i) => {
+                  const active = quizPhase === "quiz" && currentIndex === i;
+                  return (
+                    <button
+                      type="button"
+                      key={q.id ?? i}
+                      style={{
+                        ...s.sidebarLink,
+                        ...(active ? s.sidebarLinkActive : {}),
+                      }}
+                      onClick={() => onOpenQuestion(i)}
+                      disabled={showLoadingOverlay}
+                    >
+                      <span style={s.sidebarLinkNum}>문제 {i + 1}</span>
+                      <span style={s.sidebarLinkTitle}>{truncateNavTitle(q.question)}</span>
+                    </button>
+                  );
+                })
+              : null}
             {isStarted ? (
               <button
                 type="button"
