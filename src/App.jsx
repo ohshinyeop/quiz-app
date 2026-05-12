@@ -548,7 +548,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    // loadQuestions();
+    loadQuestions();
   }, []);
 
   useEffect(() => {
