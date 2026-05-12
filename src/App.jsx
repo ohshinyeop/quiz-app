@@ -180,10 +180,49 @@ function ThemeIconMoon() {
 }
 
 function IntroTeamBook() {
+  const [touchOpen, setTouchOpen] = useState(false);
+  const [tapToggle, setTapToggle] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(hover: none)").matches : false,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: none)");
+    const onChange = () => {
+      setTapToggle(mq.matches);
+      if (!mq.matches) setTouchOpen(false);
+    };
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const classNames = [
+    "quiz-app-intro-book",
+    "quiz-app-book",
+    tapToggle ? "quiz-app-intro-book--tap-toggle" : "",
+    tapToggle && touchOpen ? "quiz-app-intro-book--touch-open" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
-      className="quiz-app-intro-book quiz-app-book"
-      aria-label="아이샵케어 CX팀 — 호버 시 제작자 정보"
+      className={classNames}
+      aria-label={tapToggle ? "아이샵케어 CX팀 — 눌러서 제작자 정보 열기·닫기" : "아이샵케어 CX팀 — 호버 시 제작자 정보"}
+      {...(tapToggle
+        ? {
+            role: "button",
+            tabIndex: 0,
+            "aria-expanded": touchOpen,
+            onClick: () => setTouchOpen((o) => !o),
+            onKeyDown: (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setTouchOpen((o) => !o);
+              }
+            },
+          }
+        : {})}
     >
       <div className="quiz-app-book-stack">
         <p className="quiz-app-book-inner-text quiz-app-book-size-only" aria-hidden="true">

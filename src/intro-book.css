@@ -100,22 +100,27 @@
   transition: opacity 0.35s ease;
 }
 
+.quiz-app-intro-book--tap-toggle {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 @media (hover: hover) {
   .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover {
     transform: rotateY(-80deg);
   }
 
   .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover-text {
-    /* opacity: 0; */
+    opacity: 0;
   }
 }
 
 @media (hover: none) {
-  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover {
+  .quiz-app-intro-book.quiz-app-intro-book--touch-open .quiz-app-book-cover {
     transform: rotateY(-72deg);
   }
 
-  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover-text {
+  .quiz-app-intro-book.quiz-app-intro-book--touch-open .quiz-app-book-cover-text {
     opacity: 0;
   }
 }
@@ -150,11 +155,11 @@
   .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover {
     transform: none;
   }
-  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover {
+  .quiz-app-intro-book.quiz-app-intro-book--touch-open .quiz-app-book-cover {
     transform: none;
   }
   .quiz-app-intro-book.quiz-app-book:hover .quiz-app-book-cover-text,
-  .quiz-app-intro-book.quiz-app-book:active .quiz-app-book-cover-text {
+  .quiz-app-intro-book.quiz-app-intro-book--touch-open .quiz-app-book-cover-text {
     opacity: 1;
   }
 }
