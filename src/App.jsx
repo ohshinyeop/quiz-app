@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
  * 개발 모드: 목 문제·응답 시트 POST 생략(로컬 UI만 확인).
  * 배포/실연동 시 false 로 두면 Google Apps Script 로 조회·제출합니다.
  */
-const IS_DEV_MODE = true;
+const IS_DEV_MODE = false;
 
 
 /** window / document / 레이아웃 스크롤 루트까지 맨 위로 (환경·뷰포트에 따라 스크롤 대상이 갈림) */
