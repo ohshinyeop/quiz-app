@@ -34,8 +34,6 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymWg8TtMG_qQ
 
 /** 모바일: 상단바 + 드로어 / PC·태블릿: 좌측 고정 사이드바 */
 const MOBILE_SIDEBAR_MQ = "(max-width: 767px)";
-/** `styles.mobileTopBar.height` 와 동기 — visualViewport 보정에 사용 */
-const MOBILE_TOP_BAR_HEIGHT_PX = 52;
 
 /** 스프레드시트 `문제` 시트와 동일한 형태(id, question, answer, type, options?, explanation?) */
 const MOCK_QUIZ_LIST = [
@@ -765,32 +763,42 @@ export default function App() {
   }, []);
 
   /**
-   * iOS 크롬: 100vh/svh/dvh가 실제 보이는 영역과 어긋나 세로 center 시 아래에 큰 빈칸이 생김.
-   * visualViewport 높이로 메인 컬럼 높이를 맞춤 (사파리·인앱은 부작용 거의 없음).
+   * iPhone 크롬(CriOS): layout 뷰포트 높이가 커져 flex center 아래에 큰 빈 영역·이상한 스크롤이 생기는 경우가 있음.
+   * innerHeight로 html/body를 맞추고 스크롤은 .quiz-app-mobile-main 내부로만 두는 패턴.
    */
-  useLayoutEffect(() => {
-    if (!isMobileLayout) return undefined;
-
-    const syncMobileMainHeight = () => {
-      const el = mobileMainColumnRef.current;
-      if (!el) return;
-      const vv = window.visualViewport;
-      if (!vv) return;
-      const h = Math.max(120, Math.round(vv.height - MOBILE_TOP_BAR_HEIGHT_PX));
-      el.style.height = `${h}px`;
-      el.style.maxHeight = `${h}px`;
+  useEffect(() => {
+    const clearDocLock = () => {
+      document.documentElement.style.removeProperty("height");
+      document.body.style.removeProperty("height");
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overflow");
     };
 
-    syncMobileMainHeight();
-    requestAnimationFrame(() => syncMobileMainHeight());
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", syncMobileMainHeight);
-    vv?.addEventListener("scroll", syncMobileMainHeight);
-    window.addEventListener("resize", syncMobileMainHeight);
+    if (!isMobileLayout) {
+      clearDocLock();
+      return undefined;
+    }
+
+    const isIosChrome = /iPhone|iPad|iPod/.test(navigator.userAgent) && /CriOS\//.test(navigator.userAgent);
+    if (!isIosChrome) {
+      return undefined;
+    }
+
+    const apply = () => {
+      const h = window.innerHeight;
+      document.documentElement.style.height = `${h}px`;
+      document.body.style.height = `${h}px`;
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    };
+
+    apply();
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
     return () => {
-      vv?.removeEventListener("resize", syncMobileMainHeight);
-      vv?.removeEventListener("scroll", syncMobileMainHeight);
-      window.removeEventListener("resize", syncMobileMainHeight);
+      clearDocLock();
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
     };
   }, [isMobileLayout]);
 
@@ -1640,10 +1648,11 @@ const baseStyles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    /* 상단은 고정 상단바(52px) 바로 아래 — 패딩은 .quiz-app-mobile-main 에서 */
     boxSizing: "border-box",
     fontFamily: font,
     width: "100%",
+    height: "100%",
+    minHeight: 0,
     background: "#f2f4f6",
   },
   desktopShell: {
