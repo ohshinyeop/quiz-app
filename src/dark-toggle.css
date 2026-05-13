@@ -6,6 +6,8 @@
 .quiz-app-dark-mode-fixed-wrap {
   overflow: visible;
   pointer-events: auto;
+  padding-top: 8px;
+  padding-right: 20px;
 }
 
 /* 부모가 flex여도 정렬이 깨지지 않도록 table-cell 대체 */

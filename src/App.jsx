@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+/**
+ * 개발 모드: 목 문제·응답 시트 POST 생략(로컬 UI만 확인).
+ * 배포/실연동 시 false 로 두면 Google Apps Script 로 조회·제출합니다.
+ */
+const IS_DEV_MODE = false;
+
+
 /** window / document / 레이아웃 스크롤 루트까지 맨 위로 (환경·뷰포트에 따라 스크롤 대상이 갈림) */
 function scrollLayoutToTop(layoutRoots) {
   window.scrollTo(0, 0);
@@ -24,11 +31,6 @@ function scrollLayoutToTop(layoutRoots) {
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymWg8TtMG_qQAfnA9AaPaVwawApDrYDGcBZExdom49-_oNzODRorj6H1NoZ40Itfg6/exec";
 
-/**
- * 개발 모드: 목 문제·응답 시트 POST 생략(로컬 UI만 확인).
- * 배포/실연동 시 false 로 두면 Google Apps Script 로 조회·제출합니다.
- */
-const IS_DEV_MODE = false;
 
 /** 모바일: 상단바 + 드로어 / PC·태블릿: 좌측 고정 사이드바 */
 const MOBILE_SIDEBAR_MQ = "(max-width: 767px)";
@@ -54,6 +56,204 @@ const MOCK_QUIZ_LIST = [
     id: 3,
     question: "[개발용] 주관식: 업무 인사 한 마디를 적어 주세요.",
     answer: "화이팅",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 4,
+    question: "[개발용] OX: 고객 응대 시 먼저 공감을 표현하는 것이 좋다.",
+    answer: "O",
+    type: "ox",
+    explanation: "공감 후 해결을 제시하면 신뢰가 쌓입니다.",
+  },
+  {
+    id: 5,
+    question: "[개발용] 객관식: CX의 일반적 의미는?",
+    answer: "고객 경험",
+    type: "mc",
+    options: ["고객 경험", "재무 분석", "생산 공정"],
+    explanation: "Customer Experience의 약자입니다.",
+  },
+  {
+    id: 6,
+    question: "[개발용] 주관식: 오늘 목표 한 단어로 적어 주세요.",
+    answer: "집중",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 7,
+    question: "[개발용] OX: 문의가 길어지면 상대방을 먼저 비난해도 된다.",
+    answer: "X",
+    type: "ox",
+    explanation: "비난보다는 사실 확인과 해결에 초점을 둡니다.",
+  },
+  {
+    id: 8,
+    question: "[개발용] 객관식: 올바른 인사말에 가까운 것은?",
+    answer: "안녕하세요, 무엇을 도와드릴까요?",
+    type: "mc",
+    options: ["안녕하세요, 무엇을 도와드릴까요?", "왜 그랬어요?", "그건 제 책임 아닙니다"],
+    explanation: "열린 질문으로 대화를 시작합니다.",
+  },
+  {
+    id: 9,
+    question: "[개발용] 주관식: 팀 약속 한 가지를 짧게 써 주세요.",
+    answer: "존중",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 10,
+    question: "[개발용] OX: 해결 불가 시에도 안내와 대안을 제시해야 한다.",
+    answer: "O",
+    type: "ox",
+    explanation: "다음 단계나 대체 경로를 알려 주는 것이 좋습니다.",
+  },
+  {
+    id: 11,
+    question: "[개발용] 객관식: 응대 기록을 남기는 이유로 맞는 것은?",
+    answer: "이력 공유와 품질 개선",
+    type: "mc",
+    options: ["이력 공유와 품질 개선", "개인 일기", "불필요한 중복"],
+    explanation: "후속 응대와 개선에 활용됩니다.",
+  },
+  {
+    id: 12,
+    question: "[개발용] 주관식: 감사 인사 한 문장을 적어 주세요.",
+    answer: "감사합니다",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 13,
+    question: "[개발용] OX: 약속한 시간에 연락드리겠다고 하면 반드시 지켜야 한다.",
+    answer: "O",
+    type: "ox",
+    explanation: "지연 시 미리 알리는 것도 포함됩니다.",
+  },
+  {
+    id: 14,
+    question: "[개발용] 객관식: 어려운 고객일 때 우선할 태도는?",
+    answer: "침착하고 일관된 톤 유지",
+    type: "mc",
+    options: ["침착하고 일관된 톤 유지", "감정적으로 맞받아치기", "무시하기"],
+    explanation: "프로페셔널한 태도가 신뢰를 지킵니다.",
+  },
+  {
+    id: 15,
+    question: "[개발용] 주관식: 오늘 배운 점 한 줄 요약.",
+    answer: "경청",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 16,
+    question: "[개발용] OX: 내부 용어를 고객에게 그대로 써도 된다.",
+    answer: "X",
+    type: "ox",
+    explanation: "고객이 이해하기 쉬운 말로 풀어 설명합니다.",
+  },
+  {
+    id: 17,
+    question: "[개발용] 객관식: 피드백을 받았을 때 먼저 할 일은?",
+    answer: "듣고 확인 질문하기",
+    type: "mc",
+    options: ["듣고 확인 질문하기", "즉시 반박하기", "읽지 않기"],
+    explanation: "의도를 정확히 파악한 뒤 대응합니다.",
+  },
+  {
+    id: 18,
+    question: "[개발용] 주관식: 동료에게 건넬 격려 한 마디.",
+    answer: "수고했어",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 19,
+    question: "[개발용] OX: 에스컬레이션은 문제를 회피하기 위한 수단이다.",
+    answer: "X",
+    type: "ox",
+    explanation: "필요 시 빠른 해결을 위해 적절한 채널로 옮깁니다.",
+  },
+  {
+    id: 20,
+    question: "[개발용] 객관식: Follow-up의 의미로 가장 가까운 것은?",
+    answer: "후속 조치·연락",
+    type: "mc",
+    options: ["후속 조치·연락", "휴가 신청", "회식 준비"],
+    explanation: "약속한 대로 이어가는 연락이나 확인입니다.",
+  },
+  {
+    id: 21,
+    question: "[개발용] 주관식: 업무 중 스트레스 해소법 한 가지.",
+    answer: "산책",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 22,
+    question: "[개발용] OX: 개인정보는 필요한 범위에서만 수집·안내한다.",
+    answer: "O",
+    type: "ox",
+    explanation: "보안과 규정을 준수합니다.",
+  },
+  {
+    id: 23,
+    question: "[개발용] 객관식: ‘한 번에 한 가지 이슈’로 대화하면 좋은 이유는?",
+    answer: "혼선을 줄인다",
+    type: "mc",
+    options: ["혼선을 줄인다", "대화를 길게 한다", "이슈를 숨긴다"],
+    explanation: "주제가 명확할수록 해결이 빨라집니다.",
+  },
+  {
+    id: 24,
+    question: "[개발용] 주관식: 이번 주 나에게 주는 칭찬 한 마디.",
+    answer: "잘했다",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 25,
+    question: "[개발용] OX: 템플릿 답변은 항상 그대로 보내도 된다.",
+    answer: "X",
+    type: "ox",
+    explanation: "상황에 맞게 다듬어야 합니다.",
+  },
+  {
+    id: 26,
+    question: "[개발용] 객관식: VOC의 의미에 가까운 것은?",
+    answer: "고객의 소리",
+    type: "mc",
+    options: ["고객의 소리", "내부 회의록", "재고 현황"],
+    explanation: "Voice of Customer입니다.",
+  },
+  {
+    id: 27,
+    question: "[개발용] 주관식: 신입에게 해 주고 싶은 조언 한 줄.",
+    answer: "질문하세요",
+    type: "short",
+    explanation: "샘플 해설입니다.",
+  },
+  {
+    id: 28,
+    question: "[개발용] OX: 상대방 말을 끝까지 듣는 것이 경청이다.",
+    answer: "O",
+    type: "ox",
+    explanation: "요지를 파악한 뒤 응답합니다.",
+  },
+  {
+    id: 29,
+    question: "[개발용] 객관식: 마감이 촉박할 때 우선 순위를 정하는 이유는?",
+    answer: "영향도가 큰 일부터",
+    type: "mc",
+    options: ["영향도가 큰 일부터", "무작위", "쉬운 것만"],
+    explanation: "리스크와 임팩트를 고려합니다.",
+  },
+  {
+    id: 30,
+    question: "[개발용] 주관식: 앞으로 지키고 싶은 습관 한 가지.",
+    answer: "기록",
     type: "short",
     explanation: "샘플 해설입니다.",
   },
@@ -853,7 +1053,7 @@ export default function App() {
 
   const openSummary = () => {
     if (!allQuestionsAnswered) {
-      alert("모든 문제를 제출한 뒤 확인할 수 있습니다.");
+      showHumorToast("모든 문제를 제출한 뒤 확인할 수 있습니다.");
       return;
     }
     setSidebarOpen(false);
@@ -869,17 +1069,16 @@ export default function App() {
     <>
       <LoadingOverlay open={showLoadingOverlay} message={loadingOverlayMessage} theme={styles} />
       <HumorToast message={humorToastMessage} theme={styles} />
-      <DarkModeToggleFixed
-        darkMode={darkMode}
-        onDarkModeChange={setDarkMode}
-        wrapStyle={{
-          ...styles.darkModeToggleFixed,
-          top: isMobileLayout
-            ? "calc(52px + 6px + env(safe-area-inset-top, 0px))"
-            : "calc(12px + env(safe-area-inset-top, 0px))",
-          ...(isMobileLayout && sidebarOpen ? { zIndex: 255 } : {}),
-        }}
-      />
+      {!isMobileLayout ? (
+        <DarkModeToggleFixed
+          darkMode={darkMode}
+          onDarkModeChange={setDarkMode}
+          wrapStyle={{
+            ...styles.darkModeToggleFixed,
+            top: "calc(12px + env(safe-area-inset-top, 0px))",
+          }}
+        />
+      ) : null}
       {isMobileLayout ? (
         <header style={styles.mobileTopBar}>
           <button
@@ -897,6 +1096,11 @@ export default function App() {
             </span>
           </button>
           <span style={styles.mobileTopBarTitle}>온보딩 퀴즈</span>
+          <DarkModeToggleFixed
+            darkMode={darkMode}
+            onDarkModeChange={setDarkMode}
+            wrapStyle={styles.darkModeToggleInTopBar}
+          />
         </header>
       ) : null}
       {isMobileLayout ? (
@@ -951,7 +1155,14 @@ export default function App() {
             onOpenSummary={openSummary}
             showLoadingOverlay={showLoadingOverlay}
           />
-          <div style={styles.mainColumnDesktop}>{node}</div>
+          <div
+            style={{
+              ...styles.mainColumnDesktop,
+              ...(isStarted && quizPhase === "summary" ? { justifyContent: "flex-start" } : {}),
+            }}
+          >
+            {node}
+          </div>
         </div>
       )}
     </>
@@ -1379,6 +1590,7 @@ const baseStyles = {
     boxSizing: "border-box",
     fontFamily: font,
     width: "100%",
+    overflow: "auto",
   },
   mainColumnMobile: {
     minHeight: "100dvh",
@@ -1389,7 +1601,7 @@ const baseStyles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     padding: "72px 20px 28px",
     boxSizing: "border-box",
     fontFamily: font,
@@ -1495,6 +1707,17 @@ const baseStyles = {
     justifyContent: "flex-end",
     alignItems: "flex-start",
     pointerEvents: "auto",
+    fontFamily: font,
+  },
+  /** 모바일 상단바 우측 — fixed 해제, flex 줄 말끝 정렬 */
+  darkModeToggleInTopBar: {
+    position: "relative",
+    flexShrink: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingTop: 0,
+    paddingRight: "max(4px, env(safe-area-inset-right, 0px))",
     fontFamily: font,
   },
   hamburgerBar: {
