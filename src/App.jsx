@@ -1601,10 +1601,7 @@ const baseStyles = {
     overflow: "auto",
   },
   mainColumnMobile: {
-    height: "100vh", /* 구형 브라우저 대응 */
-    height: "100svh", /* 툴바가 있는 작은 화면 기준 */
-    minHeight: "100dvh",
-    maxHeight: "100dvh",
+    height: "100dvh", /* 구형 브라우저 대응 */
     overflowX: "hidden",
     // overflowY: "auto",
     overscrollBehavior: "contain",
