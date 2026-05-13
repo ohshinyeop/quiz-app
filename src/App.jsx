@@ -1604,7 +1604,7 @@ const baseStyles = {
     minHeight: "100dvh",
     maxHeight: "100dvh",
     overflowX: "hidden",
-    overflowY: "auto",
+    // overflowY: "auto",
     overscrollBehavior: "contain",
     display: "flex",
     flexDirection: "column",
