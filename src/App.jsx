@@ -1120,7 +1120,15 @@ export default function App() {
             onOpenSummary={openSummary}
             showLoadingOverlay={showLoadingOverlay}
           />
-          <div ref={mobileMainColumnRef} style={styles.mainColumnMobile}>{node}</div>
+          <div
+            ref={mobileMainColumnRef}
+            style={{
+              ...styles.mainColumnMobile,
+              ...(isStarted && quizPhase === "summary" ? { justifyContent: "flex-start" } : {}),
+            }}
+          >
+            {node}
+          </div>
         </>
       ) : (
         <div ref={desktopShellRef} style={styles.desktopShell}>
@@ -1601,7 +1609,7 @@ const baseStyles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "center",
     padding: "72px 20px 28px",
     boxSizing: "border-box",
     fontFamily: font,
