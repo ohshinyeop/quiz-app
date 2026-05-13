@@ -34,6 +34,8 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbymWg8TtMG_qQ
 
 /** 모바일: 상단바 + 드로어 / PC·태블릿: 좌측 고정 사이드바 */
 const MOBILE_SIDEBAR_MQ = "(max-width: 767px)";
+/** `styles.mobileTopBar.height` 와 동기 — visualViewport 보정에 사용 */
+const MOBILE_TOP_BAR_HEIGHT_PX = 52;
 
 /** 스프레드시트 `문제` 시트와 동일한 형태(id, question, answer, type, options?, explanation?) */
 const MOCK_QUIZ_LIST = [
@@ -761,6 +763,36 @@ export default function App() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  /**
+   * iOS 크롬: 100vh/svh/dvh가 실제 보이는 영역과 어긋나 세로 center 시 아래에 큰 빈칸이 생김.
+   * visualViewport 높이로 메인 컬럼 높이를 맞춤 (사파리·인앱은 부작용 거의 없음).
+   */
+  useLayoutEffect(() => {
+    if (!isMobileLayout) return undefined;
+
+    const syncMobileMainHeight = () => {
+      const el = mobileMainColumnRef.current;
+      if (!el) return;
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const h = Math.max(120, Math.round(vv.height - MOBILE_TOP_BAR_HEIGHT_PX));
+      el.style.height = `${h}px`;
+      el.style.maxHeight = `${h}px`;
+    };
+
+    syncMobileMainHeight();
+    requestAnimationFrame(() => syncMobileMainHeight());
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", syncMobileMainHeight);
+    vv?.addEventListener("scroll", syncMobileMainHeight);
+    window.addEventListener("resize", syncMobileMainHeight);
+    return () => {
+      vv?.removeEventListener("resize", syncMobileMainHeight);
+      vv?.removeEventListener("scroll", syncMobileMainHeight);
+      window.removeEventListener("resize", syncMobileMainHeight);
+    };
+  }, [isMobileLayout]);
 
   useEffect(() => {
     if (isMobileLayout) {
@@ -1608,7 +1640,7 @@ const baseStyles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    padding: "72px 20px 28px",
+    /* 상단은 고정 상단바(52px) 바로 아래 — 패딩은 .quiz-app-mobile-main 에서 */
     boxSizing: "border-box",
     fontFamily: font,
     width: "100%",

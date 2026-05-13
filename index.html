@@ -2,7 +2,10 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="any" />
     <title>아이샵케어 CX팀 온보딩 퀴즈</title>
     <link
@@ -26,19 +29,14 @@
       #root {
         min-height: 100%;
       }
-      /**
-       * 모바일 메인 컬럼: iOS 크롬에서 100dvh/100vh가 ‘보이는 영역’보다 커져
-       * 세로 center 정렬 시 아래에 큰 빈 여백이 생기는 경우가 있음 → svh 우선.
-       */
+      /* 높이는 App.jsx visualViewport 보정 — 패딩·스크롤만 고정 */
       .quiz-app-mobile-main {
         box-sizing: border-box;
         overflow-x: hidden;
         overflow-y: auto;
         overscroll-behavior: contain;
-        height: 100vh;
-        max-height: 100vh;
-        height: 100svh;
-        max-height: 100svh;
+        margin-top: 52px;
+        padding: 16px 20px max(28px, env(safe-area-inset-bottom, 0px));
       }
       @keyframes quiz-app-spin {
         to {
