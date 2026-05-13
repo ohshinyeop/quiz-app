@@ -1122,6 +1122,7 @@ export default function App() {
           />
           <div
             ref={mobileMainColumnRef}
+            className="quiz-app-mobile-main"
             style={{
               ...styles.mainColumnMobile,
               ...(isStarted && quizPhase === "summary" ? { justifyContent: "flex-start" } : {}),
@@ -1601,9 +1602,7 @@ const baseStyles = {
     overflow: "auto",
   },
   mainColumnMobile: {
-    height: "100dvh", /* 구형 브라우저 대응 */
     overflowX: "hidden",
-    // overflowY: "auto",
     overscrollBehavior: "contain",
     display: "flex",
     flexDirection: "column",

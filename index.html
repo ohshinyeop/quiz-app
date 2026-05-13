@@ -15,9 +15,30 @@
       *::after {
         box-sizing: border-box;
       }
+      html,
       body {
         margin: 0;
         -webkit-font-smoothing: antialiased;
+      }
+      body {
+        min-height: 100%;
+      }
+      #root {
+        min-height: 100%;
+      }
+      /**
+       * 모바일 메인 컬럼: iOS 크롬에서 100dvh/100vh가 ‘보이는 영역’보다 커져
+       * 세로 center 정렬 시 아래에 큰 빈 여백이 생기는 경우가 있음 → svh 우선.
+       */
+      .quiz-app-mobile-main {
+        box-sizing: border-box;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        height: 100vh;
+        max-height: 100vh;
+        height: 100svh;
+        max-height: 100svh;
       }
       @keyframes quiz-app-spin {
         to {
